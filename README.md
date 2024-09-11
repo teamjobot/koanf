@@ -34,6 +34,16 @@ go get -u github.com/knadh/koanf/parsers/toml
 
 [See the list](#api) of all bundled Providers and Parsers.
 
+### Team Jobot Overrides
+Currently, this forked repo fixes an [issue](https://github.com/knadh/koanf/issues/312) we had with koanf. To minimize changes and allow for merging upstream, the original module paths and package names are preserved. To use this fork, add the following to your `go.mod` file where you would normally have references to koanf directly: 
+
+```go
+replace github.com/knadh/koanf/v2 => github.com/teamjobot/koanf/v2 master
+replace github.com/knadh/koanf/providers/appconfig/v2 => github.com/teamjobot/koanf/providers/appconfig/v2 master
+replace github.com/knadh/koanf/providers/env => github.com/teamjobot/koanf/providers/env master
+replace github.com/knadh/koanf/parsers/yaml => github.com/teamjobot/koanf/parsers/yaml master
+```
+
 ### Contents
 
 - [Concepts](#concepts)

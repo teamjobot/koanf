@@ -58,7 +58,14 @@ func (ko *Koanf) UnmarshalWithConf2(path string, o interface{}, c UnmarshalConf)
 		}
 	}
 
-	return d.Decode(mp)
+	err = d.Decode(mp)
+
+	if err != nil {
+		return err
+	}
+
+	err = ko.processStruct("", o)
+	return err
 }
 
 // --- copied and adapted from envconfig
@@ -141,19 +148,12 @@ func (e *ParseError) Error() string {
 		e.Err)
 }
 
-func process(prefix string, spec interface{}) error {
+func (ko *Koanf) processStruct(prefix string, spec interface{}) error {
 	infos, err := gatherInfo(prefix, spec)
 
 	for _, info := range infos {
-
-		// `os.Getenv` cannot differentiate between an explicitly set empty value
-		// and an unset value. `os.LookupEnv` is preferred to `syscall.Getenv`,
-		// but it is only available in go1.5 or newer. We're using Go build tags
-		// here to use os.LookupEnv for >=go1.5
-		value, ok := lookupEnv(info.Key)
-		if !ok && info.Alt != "" {
-			value, ok = lookupEnv(info.Alt)
-		}
+		value := ko.String(info.Key)
+		ok := ko.Exists(info.Key)
 
 		def := info.Tags.Get("default")
 		if def != "" && !ok {

@@ -64,7 +64,7 @@ func (ko *Koanf) UnmarshalWithConf2(path string, o interface{}, c UnmarshalConf)
 		return err
 	}
 
-	err = ko.processStruct("", o)
+	err = ko.processStruct(o, c)
 	return err
 }
 
@@ -148,8 +148,8 @@ func (e *ParseError) Error() string {
 		e.Err)
 }
 
-func (ko *Koanf) processStruct(prefix string, spec interface{}) error {
-	infos, err := gatherInfo(prefix, spec)
+func (ko *Koanf) processStruct(spec interface{}, c UnmarshalConf) error {
+	infos, err := ko.gatherInfo(spec, c)
 
 	for _, info := range infos {
 		value := ko.String(info.Key)
@@ -298,7 +298,7 @@ func processField(value string, field reflect.Value) error {
 }
 
 // GatherInfo gathers information about the specified struct
-func gatherInfo(prefix string, spec interface{}) ([]varInfo, error) {
+func (ko *Koanf) gatherInfo(spec interface{}, c UnmarshalConf) ([]varInfo, error) {
 	s := reflect.ValueOf(spec)
 
 	if s.Kind() != reflect.Ptr {
@@ -336,31 +336,22 @@ func gatherInfo(prefix string, spec interface{}) ([]varInfo, error) {
 			Name:  ftype.Name,
 			Field: f,
 			Tags:  ftype.Tag,
-			Alt:   strings.ToUpper(ftype.Tag.Get("envconfig")),
+			Alt:   ftype.Tag.Get(c.DecoderConfig.TagName),
 		}
 
-		// Default to the field name as the env var name (will be upcased)
 		info.Key = info.Name
 
 		if info.Alt != "" {
 			info.Key = info.Alt
 		}
-		if prefix != "" {
-			info.Key = fmt.Sprintf("%s_%s", prefix, info.Key)
-		}
-		info.Key = strings.ToUpper(info.Key)
+
 		infos = append(infos, info)
 
 		if f.Kind() == reflect.Struct {
 			// honor Decode if present
 			if decoderFrom(f) == nil && setterFrom(f) == nil && textUnmarshaler(f) == nil && binaryUnmarshaler(f) == nil {
-				innerPrefix := prefix
-				if !ftype.Anonymous {
-					innerPrefix = info.Key
-				}
-
 				embeddedPtr := f.Addr().Interface()
-				embeddedInfos, err := gatherInfo(innerPrefix, embeddedPtr)
+				embeddedInfos, err := ko.gatherInfo(embeddedPtr, c)
 				if err != nil {
 					return nil, err
 				}

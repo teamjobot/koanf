@@ -34,3 +34,26 @@ func TestUnmarshalDefaultTag(t *testing.T) {
 	assert.Equal(t, "Info", config.LogLevel)
 	assert.Equal(t, 4000, config.Port)
 }
+
+func TestUnmarshalRequiredTag(t *testing.T) {
+	type configType struct {
+		ApiKey string `koanf:"api_key" required:"true"`
+	}
+
+	var config configType
+	unmarshalConf := koanf.UnmarshalConf{Tag: "koanf"}
+
+	const delim = "."
+	const path = ""
+
+	k := koanf.New(delim)
+
+	err := k.Load(confmap.Provider(map[string]interface{}{}, "."), nil)
+
+	assert.Nilf(t, err, "failed to load: %v", err)
+
+	err = k.UnmarshalWithConf2(path, &config, unmarshalConf)
+	assert.NotNilf(t, err, "expected error for required field, got nil")
+
+	assert.Equal(t, "", config.ApiKey)
+}
